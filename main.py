@@ -2,20 +2,16 @@ import discord
 from discord.ext import commands, tasks
 import urllib.parse, urllib.request
 from bs4 import BeautifulSoup
-import re, datetime
+import re, datetime, os
 
 # 디스코드 봇 info
 game = discord.Game("MapleStory")
 bot = commands.Bot(command_prefix='!',status=discord.Status.online, activity=game)
-token = 'ODY2NzczNjY3MDkzNjc2MDgy.YPXb4g.qyqmS68lfa3gUYKiFq_NgoC-DYw'
-
-# 서버 id list
-channel1_id = 750692218985119765 # 메 서버
-channel2_id = 865269056173375500 # 듀부링 서버
+token = os.environ['MapleDiscordBot_Token']
 
 # 로그 남기기 함수
 def printLog(str1, str2):
-    log = open('MapleDiscordLog.txt','a',encoding='utf-8')
+    log = open('/constants/MapleDiscordLog.txt','a',encoding='utf-8')
     dt = datetime.datetime.now()
     if(dt.weekday() == 0): weekday = '월'
     if(dt.weekday() == 1): weekday = '화'
@@ -51,6 +47,33 @@ def getContent():
 async def getHelp(ctx):
     content = getContent()
     await ctx.send(embed=content)
+
+# 알림 등록
+@bot.command(aliases=["알림등록"])
+async def setNotice(ctx):
+    channels_id = open("/constants/channels_id.txt",'a',encoding='utf-8')
+    # 채널 ID 추가
+    channels_id.write("\n{}".format(ctx.channel.id))
+    channels_id.close()
+
+    await ctx.send("알림이 정상적으로 등록되었습니다.")
+    content = getContent()
+    await ctx.send(embed=content)
+
+# 등록된 채널에 메세지 보내기
+async def sendMessege(content):
+    channels_id = open("/constants/channels_id.txt",'r',encoding='utf-8')
+    i = 0
+    while True:
+        i += 1
+        channel_id = channels_id.readline()
+        if not channel_id: break
+        channel = bot.get_channel(int(channel_id))
+        try:
+            await channel.send(embed=content)
+        except:
+            print("{} 채널 메세지 안보내짐".format(channel_id))
+    channels_id.close()
 
 # 캐릭터 정보 URL 반환 함수
 def getCharacterURL(nickname):
@@ -258,7 +281,7 @@ async def theSeed_error(ctx,error):
 
 # 이벤트 공지 함수
 async def eventNoticeFunc():
-    constant = open("event_num.txt",'r',encoding='utf-8')
+    constant = open("/constants/event_num.txt",'r',encoding='utf-8')
     temp = constant.readline()
     constant.close()
     url = "https://maplestory.nexon.com/News/Event/Ongoing/{}".format(temp)
@@ -276,12 +299,8 @@ async def eventNoticeFunc():
         except:
             pass
         content.set_footer(text=date.text)
-        channel1 = bot.get_channel(channel1_id)
-        channel2 = bot.get_channel(channel2_id)
-        await channel1.send(embed=content)
-        printLog("이벤트 공지1",title.text)
-        await channel2.send(embed=content)
-        printLog("이벤트 공지2",title.text)
+        await sendMessege(content)
+        printLog("이벤트 공지",title.text)
         constant = open("event_num.txt",'w',encoding='utf-8')
         temp = str(int(temp) + 1)
         constant.write(temp)
@@ -290,7 +309,7 @@ async def eventNoticeFunc():
 
 # 캐시샵 공지 함수
 async def cashNoticeFunc():
-    constant = open("cashshop_num.txt",'r',encoding='utf-8')
+    constant = open("/constants/cashshop_num.txt",'r',encoding='utf-8')
     temp = constant.readline()
     constant.close()
     url = "https://maplestory.nexon.com/News/CashShop/Sale/{}".format(temp)
@@ -306,13 +325,9 @@ async def cashNoticeFunc():
         content = discord.Embed(title=title.text,description=url,color=0xFFFF00)
         content.set_image(url=image['src'])
         content.set_footer(text=date.text)
-        channel1 = bot.get_channel(channel1_id)
-        channel2 = bot.get_channel(channel2_id)
-        await channel1.send(embed=content)
-        printLog("캐시샵 공지1",title.text)
-        await channel2.send(embed=content)
-        printLog("캐시샵 공지2",title.text)
-        constant = open("cashshop_num.txt",'w',encoding='utf-8')
+        await sendMessege(content)
+        printLog("캐시샵 공지",title.text)
+        constant = open("/constants/cashshop_num.txt",'w',encoding='utf-8')
         temp = str(int(temp) + 1)
         constant.write(temp)
         constant.close()
@@ -331,7 +346,7 @@ async def cashNotice():
 # 점검 공지 알림 (30분 주기) 
 @tasks.loop(minutes=30)
 async def inspection():
-    file = open('inspection.txt','r',encoding='utf-8')
+    file = open('/constants/inspection.txt','r',encoding='utf-8')
     oldPost = file.readline()
     file.close()
 
@@ -345,20 +360,16 @@ async def inspection():
     else:
         url = soup.select_one("#container > div > div.contents_wrap > div.news_board > ul > li:nth-child(1) > p > a")
         content = discord.Embed(title=newPost.text,description="https://maplestory.nexon.com"+url['href'],color=0x00B8DB)
-        channel1 = bot.get_channel(channel1_id)
-        channel2 = bot.get_channel(channel2_id)
-        await channel1.send(embed=content)
-        printLog("점검 공지1",newPost.text)
-        await channel2.send(embed=content)
-        printLog("점검 공지2",newPost.text)
-        file = open('inspection.txt','w',encoding='utf-8')
+        await sendMessege(content)
+        printLog("점검 공지",newPost.text)
+        file = open('/constants/inspection.txt','w',encoding='utf-8')
         file.write(newPost.text)
         file.close()
 
 # 테스트 서버 공지 알림 (30분 주기)
 @tasks.loop(minutes=30)
 async def testServer():
-    file = open('testserver.txt','r',encoding='utf-8')
+    file = open('/constants/testserver.txt','r',encoding='utf-8')
     oldPost = []
     for i in range(0,5):
         oldPost.append(file.readline())
@@ -386,14 +397,10 @@ async def testServer():
                 else:
                     url = soup.select_one("#container > div > div.contents_wrap > div.news_board > ul > li:nth-child(1) > p > a")
                     content = discord.Embed(title=newPost[i],description="https://maplestory.nexon.com"+str(url['href']),color=0x4490E1)
-                    channel1 = bot.get_channel(channel1_id)
-                    channel2 = bot.get_channel(channel2_id)
-                    await channel1.send(embed=content)
-                    printLog("테스트 서버 공지1",newPost[i])
-                    await channel2.send(embed=content)
-                    printLog("테스트 서버 공지2",newPost[i])
+                    await sendMessege(content)
+                    printLog("테스트 서버 공지",newPost[i])
     
-    file = open('testserver.txt','w',encoding='utf-8')
+    file = open('/constants/testserver.txt','w',encoding='utf-8')
     file.write(newPost[0])
     file.write('\n'+newPost[1])
     file.write('\n'+newPost[2])
@@ -404,11 +411,6 @@ async def testServer():
 # 최초 실행
 @bot.event
 async def on_ready():
-    # content = getContent()
-    # channel1 = bot.get_channel(channel1_id)
-    # channel2 = bot.get_channel(channel2_id)
-    # await channel1.send(embed=content)
-    # await channel2.send(embed=content)
     eventNotice.start()
     cashNotice.start()
     inspection.start()

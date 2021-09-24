@@ -1,0 +1,2 @@
+ex) 채널 id 1 (long int) 
+ex) 채널 id 2 (long int)
