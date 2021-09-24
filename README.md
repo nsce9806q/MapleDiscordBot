@@ -1,4 +1,4 @@
+<p align="center"># MapleDiscordBot</P>
 <p align="center">
-  # MapleDiscordBot
-  <img src="/images/Guide.png">
+  <img src="/images/guide.png">
 </p>
