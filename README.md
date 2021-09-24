@@ -7,7 +7,7 @@
 <img src="/images/character_info.png">
 
 ## 공지 알림
-'''
+```
 !알림등록
-'''
+```
 <img src="/images/maple_info.png">
