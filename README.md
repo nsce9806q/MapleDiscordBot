@@ -1,5 +1,5 @@
 # MapleDiscordBot
-Beta services since: July 2021 ~
+Beta services: July 2021 ~
 <br><br>
 <img src="/images/guide.png">
 
